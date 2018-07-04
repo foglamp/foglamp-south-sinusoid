@@ -51,6 +51,7 @@ _DEFAULT_CONFIG = {
 _LOGGER = logger.setup(__name__, level=20)
 index = -1
 
+
 def plugin_info():
     """ Returns information about the plugin.
     Args:
@@ -182,7 +183,7 @@ def plugin_start(handle):
                         "sinusoid": next(generate_data())
                     }
                 }
-                _LOGGER.info("Original Sinusoid data: {}".format(data))
+                # _LOGGER.info("Original Sinusoid data: {}".format(data))
 
                 # Handles the JQFilter functionality
                 if handle['applyFilter']["value"].upper() == "TRUE":
@@ -198,7 +199,7 @@ def plugin_start(handle):
 
                     data = data_4[0]
                     del data_4
-                    _LOGGER.info("Transformed Sinusoid data: {}".format(data))
+                    # _LOGGER.info("Transformed Sinusoid data: {}".format(data))
 
                 await Ingest.add_readings(asset='{}'.format(data['asset']),
                                           timestamp=data['timestamp'], key=data['key'],

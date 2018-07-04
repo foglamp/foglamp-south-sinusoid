@@ -50,7 +50,6 @@ _DEFAULT_CONFIG = {
 
 _LOGGER = logger.setup(__name__, level=20)
 index = -1
-task = 0
 
 def plugin_info():
     """ Returns information about the plugin.
@@ -167,7 +166,6 @@ def plugin_start(handle):
             yield sine[index]
 
     async def save_data():
-        global task
         try:
             if handle['applyFilter']["value"].upper() == "TRUE":
                 jqfilter = JQFilter()
@@ -215,7 +213,7 @@ def plugin_start(handle):
             _LOGGER.exception("Sinusoid exception: {}".format(str(ex)))
             raise exceptions.DataRetrievalError(ex)
 
-    task = asyncio.ensure_future(save_data())
+    asyncio.ensure_future(save_data())
 
 
 def plugin_reconfigure(handle, new_config):
@@ -248,9 +246,7 @@ def _plugin_stop(handle):
     Returns:
         None
     """
-    global task
 
-    task.cancel()
     _LOGGER.info('sinusoid disconnected.')
 
 

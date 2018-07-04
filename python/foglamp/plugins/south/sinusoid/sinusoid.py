@@ -180,6 +180,7 @@ def plugin_start(handle):
                         "sinusoid": next(generate_data())
                     }
                 }
+                _LOGGER.info("Original Sinusoid data: {}".format(data))
 
                 # Handles the JQFilter functionality
                 if handle['applyFilter']["value"].upper() == "TRUE":
@@ -196,6 +197,7 @@ def plugin_start(handle):
 
                     data = data_4[0]
                     del data_4
+                    _LOGGER.info("Transformed Sinusoid data: {}".format(data))
 
                 await Ingest.add_readings(asset='{}'.format(data['asset']),
                                           timestamp=data['timestamp'], key=data['key'],
@@ -227,15 +229,10 @@ def plugin_reconfigure(handle, new_config):
     # Find diff between old config and new config
     diff = utils.get_diff(handle, new_config)
 
-    # Plugin should re-initialize and restart if key configuration is changed
-    if 'dataPointsPerSec' in diff:
-        _plugin_stop(handle)
-        new_handle = plugin_init(new_config)
-        new_handle['restart'] = 'yes'
-        _LOGGER.info("Restarting Sinusoid plugin due to change in configuration key [{}]".format(', '.join(diff)))
-    else:
-        new_handle = copy.deepcopy(handle)
-        new_handle['restart'] = 'no'
+    _plugin_stop(handle)
+    new_handle = plugin_init(new_config)
+    new_handle['restart'] = 'yes'
+    _LOGGER.info("Restarting Sinusoid plugin due to change in configuration key [{}]".format(', '.join(diff)))
 
     return new_handle
 

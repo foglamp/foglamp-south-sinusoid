@@ -30,7 +30,6 @@ Arguments:
  clean    - Remove all the old versions saved in format .XXXX
  cleanall - Remove all the versions, including the last one"
 
-
 for i in "$@"
 do
   case "$i" in
@@ -52,7 +51,7 @@ do
           ;;
       help)
           echo "${usage}"
-          exit 1
+          exit 0
           ;;
       *)
         echo "Unrecognized option: $i"

@@ -27,7 +27,8 @@ _DEFAULT_CONFIG = {
     'plugin': {
         'description': 'Sinusoid async plugin',
         'type': 'string',
-        'default': 'sinusoid'
+        'default': 'sinusoid',
+        'readonly': 'true'
     },
     'dataPointsPerSec': {
         'description': 'Data points per second',

@@ -184,7 +184,8 @@ def plugin_start(handle):
                 try:
                     await asyncio.sleep(1 / (float(handle['dataPointsPerSec']['value'])))
                 except ZeroDivisionError:
-                    _LOGGER.warning('Data points per second must be greater than 0, defaulting to sleep time 1')
+                    _LOGGER.warning('Data points per second must be greater than 0, defaulting to 1')
+                    handle['dataPointsPerSec']['value'] = '1'
                     await asyncio.sleep(1)
         except asyncio.CancelledError:
             pass

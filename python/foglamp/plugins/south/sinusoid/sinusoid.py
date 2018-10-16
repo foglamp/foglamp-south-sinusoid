@@ -43,6 +43,12 @@ _DEFAULT_CONFIG = {
         'default': '1',
         'order': '2',
         'displayName': 'Data points per second'
+    },
+    'filter': {
+        'description': 'Data processing filter script',
+        'type': 'script',
+        'default': '',
+        'displayName': 'Filter script'
     }
 }
 

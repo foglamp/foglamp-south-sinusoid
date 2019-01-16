@@ -14,7 +14,8 @@ import logging
 from foglamp.common import logger
 from foglamp.plugins.common import utils
 from foglamp.services.south import exceptions
-from foglamp.services.south.ingest import Ingest
+#from foglamp.services.south.ingest import Ingest
+import ingest
 
 
 __author__ = "Ashish Jabble"
@@ -49,6 +50,8 @@ _DEFAULT_CONFIG = {
 _LOGGER = logger.setup(__name__, level=logging.INFO)
 index = -1
 _task = None
+callback = None
+ingest_ref = None
 
 
 def plugin_info():
@@ -94,6 +97,7 @@ def plugin_start(handle):
         TimeoutError
     """
     global _task
+    _LOGGER.info("plugin_start called")
     sine = [
         0.0,
         0.104528463,
@@ -179,9 +183,9 @@ def plugin_start(handle):
                     }
                 }
 
-                await Ingest.add_readings(asset='{}'.format(data['asset']),
-                                          timestamp=data['timestamp'], key=data['key'],
-                                          readings=data['readings'])
+                _LOGGER.info("sinusoid: returning reading via ingest.ingest_callback")
+                ingest.ingest_callback(callback, ingest_ref, data)
+                _LOGGER.info("sinusoid: returned reading via ingest.ingest_callback")
 
                 try:
                     await asyncio.sleep(1 / (float(handle['dataPointsPerSec']['value'])))
@@ -195,7 +199,7 @@ def plugin_start(handle):
             _LOGGER.exception("Sinusoid exception: {}".format(str(ex)))
             raise exceptions.DataRetrievalError(ex)
 
-    _task = asyncio.ensure_future(save_data())
+    _task = asyncio.get_event_loop().run_until_complete(save_data())
 
 
 def plugin_reconfigure(handle, new_config):
@@ -233,9 +237,18 @@ def plugin_shutdown(handle):
     Returns:
         plugin shutdown
     """
+    _LOGGER.info('sinusoid plugin shut down.')
     global _task
     if _task is not None:
         _task.cancel()
         _task = None
 
     _LOGGER.info('sinusoid plugin shut down.')
+
+
+def plugin_register_ingest(handle, _callback, _ingest_ref):
+    _LOGGER.info("plugin_register_ingest")
+    global callback
+    global ingest_ref
+    callback = _callback
+    ingest_ref = _ingest_ref

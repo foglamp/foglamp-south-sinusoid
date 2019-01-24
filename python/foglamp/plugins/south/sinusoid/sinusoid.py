@@ -10,7 +10,7 @@ import asyncio
 import copy
 import uuid
 import logging
-from threading import Event
+from threading import Event, Thread
 
 from foglamp.common import logger
 from foglamp.plugins.common import utils
@@ -205,7 +205,13 @@ def plugin_start(handle):
 
     loop = asyncio.new_event_loop()
     _task = asyncio.ensure_future(save_data(handle), loop=loop)
-    loop.run_forever()
+
+    def run():
+        global loop
+        loop.run_forever()
+
+    start_task = Thread(target=run)
+    start_task.start()
 
 
 def plugin_reconfigure(handle, new_config):

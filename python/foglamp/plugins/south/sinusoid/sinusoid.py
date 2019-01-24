@@ -10,7 +10,7 @@ import asyncio
 import copy
 import uuid
 import logging
-from threading import Event, Thread
+from threading import Thread
 
 from foglamp.common import logger
 from foglamp.plugins.common import utils
@@ -51,9 +51,6 @@ _task = None
 loop = None
 callback = None
 ingest_ref = None
-
-wait_event = Event()
-wait_event.clear()
 
 sine = [
     0.0,

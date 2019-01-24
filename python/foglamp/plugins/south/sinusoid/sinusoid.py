@@ -10,19 +10,17 @@ import asyncio
 import copy
 import uuid
 import logging
+from threading import Event
 
 from foglamp.common import logger
 from foglamp.plugins.common import utils
 from foglamp.services.south import exceptions
-#from foglamp.services.south.ingest import Ingest
 import ingest
-
 
 __author__ = "Ashish Jabble"
 __copyright__ = "Copyright (c) 2018 Dianomic Systems"
 __license__ = "Apache 2.0"
 __version__ = "${VERSION}"
-
 
 _DEFAULT_CONFIG = {
     'plugin': {
@@ -50,8 +48,114 @@ _DEFAULT_CONFIG = {
 _LOGGER = logger.setup(__name__, level=logging.INFO)
 index = -1
 _task = None
+loop = None
 callback = None
 ingest_ref = None
+
+wait_event = Event()
+wait_event.clear()
+
+sine = [
+    0.0,
+    0.104528463,
+    0.207911691,
+    0.309016994,
+    0.406736643,
+    0.5,
+    0.587785252,
+    0.669130606,
+    0.743144825,
+    0.809016994,
+    0.866025404,
+    0.913545458,
+    0.951056516,
+    0.978147601,
+    0.994521895,
+    1.0,
+    0.994521895,
+    0.978147601,
+    0.951056516,
+    0.913545458,
+    0.866025404,
+    0.809016994,
+    0.743144825,
+    0.669130606,
+    0.587785252,
+    0.5,
+    0.406736643,
+    0.309016994,
+    0.207911691,
+    0.104528463,
+    1.22515E-16,
+    -0.104528463,
+    -0.207911691,
+    -0.309016994,
+    -0.406736643,
+    -0.5,
+    -0.587785252,
+    -0.669130606,
+    -0.743144825,
+    -0.809016994,
+    -0.866025404,
+    -0.913545458,
+    -0.951056516,
+    -0.978147601,
+    -0.994521895,
+    -1.0,
+    -0.994521895,
+    -0.978147601,
+    -0.951056516,
+    -0.913545458,
+    -0.866025404,
+    -0.809016994,
+    -0.743144825,
+    -0.669130606,
+    -0.587785252,
+    -0.5,
+    -0.406736643,
+    -0.309016994,
+    -0.207911691,
+    -0.104528463
+]
+
+
+def generate_data():
+    global index
+    while index >= -1:
+        # index exceeds, reset to default
+        if index >= 59:
+            index = -1
+        index += 1
+        yield sine[index]
+
+async def save_data(handle):
+    try:
+        while True:
+            time_stamp = utils.local_timestamp()
+            data = {
+                'asset': handle['assetName']['value'],
+                'timestamp': time_stamp,
+                'key': str(uuid.uuid4()),
+                'readings': {
+                    "sinusoid": next(generate_data())
+                }
+            }
+
+            _LOGGER.info("sinusoid: returning reading via ingest.ingest_callback, %s", handle['assetName']['value'])
+            ingest.ingest_callback(callback, ingest_ref, data)
+            _LOGGER.info("sinusoid: returned reading via ingest.ingest_callback")
+
+            try:
+                await asyncio.sleep(1 / (float(handle['dataPointsPerSec']['value'])))
+            except ZeroDivisionError:
+                _LOGGER.warning('Data points per second must be greater than 0, defaulting to 1')
+                handle['dataPointsPerSec']['value'] = '1'
+                await asyncio.sleep(1)
+    except asyncio.CancelledError:
+        pass
+    except (Exception, RuntimeError) as ex:
+        _LOGGER.exception("Sinusoid exception: {}".format(str(ex)))
+        raise exceptions.DataRetrievalError(ex)
 
 
 def plugin_info():
@@ -96,110 +200,12 @@ def plugin_start(handle):
     Raises:
         TimeoutError
     """
-    global _task
+    global _task, loop
     _LOGGER.info("plugin_start called")
-    sine = [
-        0.0,
-        0.104528463,
-        0.207911691,
-        0.309016994,
-        0.406736643,
-        0.5,
-        0.587785252,
-        0.669130606,
-        0.743144825,
-        0.809016994,
-        0.866025404,
-        0.913545458,
-        0.951056516,
-        0.978147601,
-        0.994521895,
-        1.0,
-        0.994521895,
-        0.978147601,
-        0.951056516,
-        0.913545458,
-        0.866025404,
-        0.809016994,
-        0.743144825,
-        0.669130606,
-        0.587785252,
-        0.5,
-        0.406736643,
-        0.309016994,
-        0.207911691,
-        0.104528463,
-        1.22515E-16,
-        -0.104528463,
-        -0.207911691,
-        -0.309016994,
-        -0.406736643,
-        -0.5,
-        -0.587785252,
-        -0.669130606,
-        -0.743144825,
-        -0.809016994,
-        -0.866025404,
-        -0.913545458,
-        -0.951056516,
-        -0.978147601,
-        -0.994521895,
-        -1.0,
-        -0.994521895,
-        -0.978147601,
-        -0.951056516,
-        -0.913545458,
-        -0.866025404,
-        -0.809016994,
-        -0.743144825,
-        -0.669130606,
-        -0.587785252,
-        -0.5,
-        -0.406736643,
-        -0.309016994,
-        -0.207911691,
-        -0.104528463
-    ]
 
-    def generate_data():
-        global index
-        while index >= -1:
-            # index exceeds, reset to default
-            if index >= 59:
-                index = -1
-            index += 1
-            yield sine[index]
-
-    async def save_data():
-        try:
-            while True:
-                time_stamp = utils.local_timestamp()
-                data = {
-                    'asset': handle['assetName']['value'],
-                    'timestamp': time_stamp,
-                    'key': str(uuid.uuid4()),
-                    'readings': {
-                        "sinusoid": next(generate_data())
-                    }
-                }
-
-                _LOGGER.info("sinusoid: returning reading via ingest.ingest_callback")
-                ingest.ingest_callback(callback, ingest_ref, data)
-                _LOGGER.info("sinusoid: returned reading via ingest.ingest_callback")
-
-                try:
-                    await asyncio.sleep(1 / (float(handle['dataPointsPerSec']['value'])))
-                except ZeroDivisionError:
-                    _LOGGER.warning('Data points per second must be greater than 0, defaulting to 1')
-                    handle['dataPointsPerSec']['value'] = '1'
-                    await asyncio.sleep(1)
-        except asyncio.CancelledError:
-            pass
-        except (Exception, RuntimeError) as ex:
-            _LOGGER.exception("Sinusoid exception: {}".format(str(ex)))
-            raise exceptions.DataRetrievalError(ex)
-
-    _task = asyncio.get_event_loop().run_until_complete(save_data())
+    loop = asyncio.new_event_loop()
+    _task = asyncio.ensure_future(save_data(handle), loop=loop)
+    loop.run_forever()
 
 
 def plugin_reconfigure(handle, new_config):
@@ -211,20 +217,18 @@ def plugin_reconfigure(handle, new_config):
     Returns:
         new_handle: new handle to be used in the future calls
     """
-    _LOGGER.info("Old config for sinusoid plugin {} \n new config {}".format(handle, new_config))
+    _LOGGER.info("Reconfigure called: Old config for sinusoid plugin {} \n new config {}".format(handle, new_config))
 
-    # Find diff between old config and new config
-    diff = utils.get_diff(handle, new_config)
+    global _task, loop
 
-    # Plugin should re-initialize and restart if key configuration is changed
-    if 'dataPointsPerSec' in diff or 'assetName' in diff:
-        plugin_shutdown(handle)
-        new_handle = plugin_init(new_config)
-        new_handle['restart'] = 'yes'
-        _LOGGER.info("Restarting Sinusoid plugin due to change in configuration key [{}]".format(', '.join(diff)))
-    else:
-        new_handle = copy.deepcopy(new_config)
-        new_handle['restart'] = 'no'
+    # plugin_shutdown
+    plugin_shutdown(handle)
+
+    # plugin_init
+    new_handle = plugin_init(new_config)
+
+    # plugin_start
+    _task = asyncio.ensure_future(save_data(new_handle), loop=loop)
 
     return new_handle
 
@@ -237,13 +241,11 @@ def plugin_shutdown(handle):
     Returns:
         plugin shutdown
     """
-    _LOGGER.info('sinusoid plugin shut down.')
-    global _task
+    _LOGGER.info('sinusoid plugin shut down called.')
+    global _task, loop
     if _task is not None:
         _task.cancel()
         _task = None
-
-    _LOGGER.info('sinusoid plugin shut down.')
 
 
 def plugin_register_ingest(handle, _callback, _ingest_ref):

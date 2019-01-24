@@ -251,9 +251,14 @@ def plugin_shutdown(handle):
         _task = None
 
 
-def plugin_register_ingest(handle, _callback, _ingest_ref):
-    _LOGGER.info("plugin_register_ingest")
-    global callback
-    global ingest_ref
-    callback = _callback
-    ingest_ref = _ingest_ref
+def plugin_register_ingest(handle, callback, ingest_ref):
+    """Required plugin interface component to communicate to South C server
+
+    Args:
+        handle: handle returned by the plugin initialisation call
+        callback: C opaque object required to passed back to C->ingest method
+        ingest_ref: C opaque object required to passed back to C->ingest method
+    """
+    global c_callback, c_ingest_ref
+    c_callback = callback
+    c_ingest_ref = ingest_ref

@@ -49,8 +49,8 @@ _LOGGER = logger.setup(__name__, level=logging.INFO)
 index = -1
 _task = None
 loop = None
-callback = None
-ingest_ref = None
+c_callback = None
+c_ingest_ref = None
 
 sine = [
     0.0,
@@ -139,7 +139,7 @@ async def save_data(handle):
             }
 
             _LOGGER.info("sinusoid: returning reading via ingest.ingest_callback, %s", handle['assetName']['value'])
-            ingest.ingest_callback(callback, ingest_ref, data)
+            ingest.ingest_callback(c_callback, c_ingest_ref, data)
             _LOGGER.info("sinusoid: returned reading via ingest.ingest_callback")
 
             try:

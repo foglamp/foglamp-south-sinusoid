@@ -4,9 +4,8 @@
 # See: http://foglamp.readthedocs.io/
 # FOGLAMP_END
 
-""" Module for Sinusoid async plugin """
+""" Module for Sinusoid async mode plugin """
 
-import asyncio
 import copy
 import uuid
 import logging
@@ -22,9 +21,10 @@ __copyright__ = "Copyright (c) 2018 Dianomic Systems"
 __license__ = "Apache 2.0"
 __version__ = "${VERSION}"
 
+
 _DEFAULT_CONFIG = {
     'plugin': {
-        'description': 'Sinusoid Plugin',
+        'description': 'Sinusoid Poll Plugin which implements sine wave with data points',
         'type': 'string',
         'default': 'sinusoid',
         'readonly': 'true'
@@ -33,25 +33,15 @@ _DEFAULT_CONFIG = {
         'description': 'Name of Asset',
         'type': 'string',
         'default': 'sinusoid',
-        'order': '1',
         'displayName': 'Asset name'
-    },
-    'dataPointsPerSec': {
-        'description': 'Data points per second',
-        'type': 'integer',
-        'default': '1',
-        'order': '2',
-        'displayName': 'Data points per second'
     }
 }
-
 _LOGGER = logger.setup(__name__, level=logging.INFO)
 index = -1
 _task = None
 loop = None
 c_callback = None
 c_ingest_ref = None
-
 sine = [
     0.0,
     0.104528463,
@@ -125,6 +115,7 @@ def generate_data():
         index += 1
         yield sine[index]
 
+
 async def save_data(handle):
     try:
         while True:
@@ -154,7 +145,7 @@ async def save_data(handle):
         _LOGGER.exception("Sinusoid exception: {}".format(str(ex)))
         raise exceptions.DataRetrievalError(ex)
 
-
+        
 def plugin_info():
     """ Returns information about the plugin.
     Args:
@@ -162,7 +153,6 @@ def plugin_info():
         dict: plugin information
     Raises:
     """
-
     return {
         'name': 'Sinusoid plugin',
         'version': '1.0',

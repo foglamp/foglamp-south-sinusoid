@@ -15,7 +15,7 @@ from threading import Thread
 from foglamp.common import logger
 from foglamp.plugins.common import utils
 from foglamp.services.south import exceptions
-import ingest
+import async_ingest
 
 __author__ = "Ashish Jabble"
 __copyright__ = "Copyright (c) 2018 Dianomic Systems"
@@ -139,7 +139,7 @@ async def save_data(handle):
             }
 
             _LOGGER.info("sinusoid: returning reading via ingest.ingest_callback, %s", handle['assetName']['value'])
-            ingest.ingest_callback(c_callback, c_ingest_ref, data)
+            async_ingest.ingest_callback(c_callback, c_ingest_ref, data)
             _LOGGER.info("sinusoid: returned reading via ingest.ingest_callback")
 
             try:

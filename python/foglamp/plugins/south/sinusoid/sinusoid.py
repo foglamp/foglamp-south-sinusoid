@@ -137,11 +137,7 @@ async def save_data(handle):
                     "sinusoid": next(generate_data())
                 }
             }
-
-            _LOGGER.info("sinusoid: returning reading via ingest.ingest_callback, %s", handle['assetName']['value'])
             async_ingest.ingest_callback(c_callback, c_ingest_ref, data)
-            _LOGGER.info("sinusoid: returned reading via ingest.ingest_callback")
-
             try:
                 await asyncio.sleep(1 / (float(handle['dataPointsPerSec']['value'])))
             except ZeroDivisionError:
@@ -164,8 +160,8 @@ def plugin_info():
     """
 
     return {
-        'name': 'Sinusoid plugin',
-        'version': '1.0',
+        'name': 'Sinusoid async plugin',
+        'version': '2.0',
         'mode': 'async',
         'type': 'south',
         'interface': '1.0',

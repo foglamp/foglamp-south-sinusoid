@@ -28,8 +28,8 @@ def test_plugin_contract():
 
 def test_plugin_info():
     assert sinusoid.plugin_info() == {
-        'name': 'Sinusoid plugin',
-        'version': '1.0',
+        'name': 'Sinusoid async plugin',
+        'version': '2.0',
         'mode': 'async',
         'type': 'south',
         'interface': '1.0',
@@ -54,4 +54,4 @@ def test_plugin_reconfigure():
 def test_plugin_shutdown():
     with patch.object(sinusoid._LOGGER, 'info') as patch_logger_info:
         sinusoid.plugin_shutdown(config)
-    patch_logger_info.assert_called_once_with('sinusoid plugin shut down.')
+    patch_logger_info.assert_called_once_with('sinusoid plugin shut down called.')
